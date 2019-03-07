@@ -1,0 +1,99 @@
+<?php
+/** @var \BelVG\AddToCart\Block\AddToCart $block */
+?>
+<form method="post" enctype="multipart/form-data" action="<?= $this->getUrl('belvg_addtocart/index/index') ?>">
+    <fieldset class="fieldset admin__fieldset">
+        <div class="admin__field field admin__field-small required _required">
+            <label class="label admin__field-label" for="file"><span><?= __('Choose cart') ?></span></label>
+            <div class="admin__field-control control" style="min-width: 300px;">
+                <select
+                    name="cart_id"
+                    title="<?= __('Choose cart') ?>"
+                    class="admin__control-text required-entry _required admin__control-text">
+                    <?php foreach ($block->getCartsList() as $quoteId => $name): ?>
+                      <option value="<?= (int)$quoteId ?>"><?= $block->escapeHtml($name) ?></option>
+                    <?php endforeach ?>
+                </select>
+            </div>
+
+        </div>
+        <div class="admin__field field admin__field-small required _required">
+          <label class="label admin__field-label" for="product-selector"><span><?= __('Choose product') ?></span></label>
+          <div class="admin__field-control control" style="min-width: 300px;">
+
+            <select id="product-selector"
+                    name="product_id"
+                    title="<?= __('Choose product') ?>"
+                    class="admin__control-text required-entry _required admin__control-text">
+                <?php foreach ($block->getProductsList() as $productId => $product): ?>
+                    <option value="<?= (int)$productId ?>" data-have-options="<?= (int)$product['have_options']?>"
+                      ><?= $block->escapeHtml($product['label']) ?></option>
+                <?php endforeach ?>
+            </select>
+
+          </div>
+        </div>
+
+        <div class="admin__field field admin__field-small required _required">
+            <label class="label admin__field-label" for="options-selector"><span><?= __('Select options') ?></span></label>
+            <div id="options-area" class="admin__field-control control"></div>
+        </div>
+
+      <div class="admin__field field admin__field-small required _required">
+        <label class="label admin__field-label" for="qty"><span><?= __('Input quantity') ?></span></label>
+        <div id="attributes" class="admin__field-control control" style="min-width: 300px;">
+          <input type="text" id=qty" name="qty" value="1" />
+        </div>
+      </div>
+      <div class="admin__field field admin__field-small required _required">
+        <div class="admin__field-control control" style="margin-left: 800px;">
+          <input name="form_key" type="hidden" value="<?= /* @escapeNotVerified */ $block->getFormKey() ?>" />
+          <button type="submit" class="action-default primary" name="submit" value="add"><?= __("Submit") ?></button>
+        </div>
+      </div>
+    </fieldset>
+</form>
+
+<script>
+    require([
+        'jquery',
+    ], function ($) {
+        $('#product-selector').change(function () {
+            var productId = $(this).val();
+            var $optionsArea = $('#options-area');
+            var optionsUrl = '<?= $block->getOptionsUrl() ?>';
+
+            $optionsArea.closest('.admin__field').css({display: 'none'});
+            $optionsArea.html('');
+
+            if ($(this).find('[value="' + productId + '"]').data('have-options')) {
+                $.ajax({
+                    url: optionsUrl,
+                    type: 'POST',
+                    dataType: 'JSON',
+                    data: {
+                        form_key: '<?= $block->getFormKey() ?>',
+                        product_id: productId,
+                    },
+                    success: function (response) {
+                        if (response.success && Object.keys(response.data.sku).length > 0) {
+                            $selector = $('<select name="sku" class="admin__control-text required-entry _required admin__control-text">')
+                                .attr('name','sku');
+
+                            response.data.sku.forEach(function (sku) {
+                                $selector.append($('<option>').val(sku).text(sku));
+                            });
+
+                            $optionsArea.append(
+                                $('<div class="admin__field-control control">').append($selector)
+                            );
+
+                            $optionsArea.closest('.admin__field').css({display: 'block'});
+                        }
+                    }
+                });
+            }
+
+        }).trigger('change');
+    });
+</script>
